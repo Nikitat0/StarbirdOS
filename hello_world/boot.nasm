@@ -12,13 +12,12 @@ loop:
     dec bx
     jne loop
 
-sleep:
-    jmp sleep
+    hlt
 
     times 0x21-($-$$) db 0
 
 msg:
-    db "!dlrow , olleH"
+    db "!dlrow ,olleH"
     len equ $ - msg
 
     times 510-($-$$) db 0
