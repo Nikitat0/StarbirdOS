@@ -1,10 +1,8 @@
-    org 0x7c00
     bits 16
 
     cli
     mov sp, 0x7c2
     mov ss, sp
-    sti
 
     mov bx, len
     mov ah, 0xe
