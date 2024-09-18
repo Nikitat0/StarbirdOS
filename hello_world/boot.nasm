@@ -3,6 +3,7 @@
     cli
     mov sp, 0x7c2
     mov ss, sp
+    not sp
 
     mov bx, len
     mov ah, 0xe
