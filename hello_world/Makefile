@@ -1,7 +1,7 @@
 .PHONY: run
 
 run: build/boot.img
-	qemu-system-i386 -fda $<
+	qemu-system-i386 -fda $< -display gtk,full-screen=on
 
 build:
 	mkdir build
