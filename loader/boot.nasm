@@ -4,7 +4,7 @@
     %ifndef IGNORE_ERROR
     %define MSG
     %endif
-    %ifndef PATTERN_TEST
+    %ifdef PATTERN_TEST
     %define MSG
     %endif
     %ifdef MSG
@@ -82,6 +82,7 @@ pattern_test_loop:
 end:
     jmp $ ; infinite loop
 
+    %ifdef MSG
 ; si: offset of msg
 ; ax, si are volatile
 print_msg:
@@ -92,6 +93,7 @@ print_msg:
     call print
     pop si
     jmp print ; tail call
+    %endif
 
     %ifdef PRINT
 ; (ds:si): char* str
