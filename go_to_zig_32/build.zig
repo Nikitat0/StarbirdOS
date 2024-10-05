@@ -32,11 +32,16 @@ pub fn build(b: *std.Build) void {
 
     const kernel_bin = b.addObjCopy(kernel_elf.getEmittedBin(), .{ .format = .bin });
 
+    const silent_error = b.option(bool, "quiet_mode", "Do not report VBR read errors") orelse false;
+
     const boot = b.addSystemCommand(&.{ "nasm", "-f", "bin", "-o" });
     const boot_bin = boot.addOutputFileArg("boot.bin");
     boot.addFileArg(b.path("src/boot.nasm"));
+    if (!silent_error)
+        boot.addArg("-DREPORT_ERROR");
 
-    const image = b.addSystemCommand(&.{"src/build_image.sh"});
+    const image = b.addSystemCommand(&.{"sh"});
+    image.addFileArg(b.path("src/build_image.sh"));
     image.addFileArg(boot_bin);
     image.addFileArg(kernel_bin.getOutput());
     const boot_img = image.addOutputFileArg("boot.img");
@@ -46,9 +51,8 @@ pub fn build(b: *std.Build) void {
     const run_image = b.addSystemCommand(&.{ "qemu-system-i386", "-fda" });
     run_image.addFileArg(boot_img);
     run_image.addArgs(&.{ "-display", "gtk,full-screen=on" });
-    if (b.option(bool, "monitor", "Enable QEMU monitor") orelse false) {
+    if (b.option(bool, "monitor", "Enable QEMU monitor") orelse false)
         run_image.addArgs(&.{ "-monitor", "stdio" });
-    }
 
     const run_step = b.step("run", "Run the kernel in QEMU");
     run_step.dependOn(&run_image.step);

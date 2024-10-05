@@ -1,7 +1,9 @@
+    RETRY_COUNT equ 5
+
     bits 16
 
     cli
-    mov sp, 0xffff
+    xor sp, sp
     mov bp, 0x1000
     mov ss, bp
     sti
@@ -9,14 +11,24 @@
     mov ds, bp
 
     mov es, bp
-    mov ax, 0x0202
     xor bx, bx
     xor cx, cx
     inc cx
     xor dh, dh
 read_loop:
+    mov di, RETRY_COUNT
+.retry:
+    mov ax, 0x0202
     int 0x13
-    jc on_read_error
+    jnc .success
+    dec di
+    jnz .retry
+    %ifdef REPORT_ERROR
+    jmp on_read_error
+    %else
+    jmp $
+    %endif
+.success:
     add cl, al ; add cl, 2
     cmp cl, 19
     jne .no_carry
@@ -67,8 +79,11 @@ dgdt:
     dw gdt_end - gdt - 1
     dd gdt + 0x20000
 
+    %ifdef REPORT_ERROR
 on_read_error:
     cld
+    mov ax, 0x7c0
+    mov ds, ax
     lea si, [error_msg]
     mov ah, 0xe
 .loop:
@@ -81,6 +96,12 @@ on_read_error:
 
 error_msg:
     db 0xd, 0xa, "An error occurred during reading of the image", 0
+    %endif
+
+    %ifdef CODE_SIZE
+    %assign CODE_SIZE $ - $$
+    %warning Code size is CODE_SIZE
+    %endif
 
     times 510-($-$$) db 0
     db 0x55, 0xaa
