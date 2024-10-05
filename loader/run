@@ -1,8 +1,0 @@
-#!/bin/sh
-
-export LOADER_CFG=${1:-full}
-
-shift
-export QEMU_EXTRA=$@
-
-make run

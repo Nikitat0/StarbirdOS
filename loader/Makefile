@@ -4,11 +4,11 @@ CFGS=$(wildcard config/*.nasm)
 VBRS=$(CFGS:config/%.nasm=build/%.bin)
 IMAGES=$(VBRS:%.bin=%.img)
 
-ifndef LOADER_CFG
-LOADER_CFG=full
+ifndef BOOT_CFG
+BOOT_CFG=full
 endif
 
-run: build/$(LOADER_CFG).img
+run: build/$(BOOT_CFG).img
 	qemu-system-i386 -fda $< -display gtk,full-screen=on $(QEMU_EXTRA)
 
 build:
@@ -22,7 +22,7 @@ build/pattern.bin: pattern.nasm | build
 
 $(IMAGES): %.img:%.bin build/pattern.bin | build
 	dd if=/dev/zero of=$@ bs=1024 count=1440
-	dd if=build/pattern.bin of=$@ conv=notrunc
+	dd if=build/pattern.bin seek=4 of=$@ conv=notrunc
 	dd if=$< of=$@ conv=notrunc
 	dd if=lorem_ipsum.txt of=$@ seek=1 conv=notrunc
 
