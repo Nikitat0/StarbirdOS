@@ -1,3 +1,5 @@
+    RETRY_COUNT equ 5
+
     bits 16
 
     cld
@@ -11,13 +13,20 @@
     mov ds, bp
 
     mov es, bp
-    mov ax, 0x0202
     xor bx, bx
     xor cx, cx
     inc cx
     xor dh, dh
 read_loop:
+    mov di, RETRY_COUNT
+.retry:
+    mov ax, 0x0202
     int 0x13
+    jnc .success
+    dec di
+    jnz .retry
+    jmp on_read_error
+.success:
     jc on_read_error
     add cl, al ; add cl, 2
     cmp cl, 19
@@ -104,6 +113,8 @@ dgdt:
     dd gdt + 0x20000
 
 on_read_error:
+    mov ax, 0x7c0
+    mov ds, ax
     lea si, [error_msg]
     mov ah, 0xe
 .loop:
