@@ -99,6 +99,11 @@ pattern_test_loop:
 end:
     jmp $ ; infinite loop
 
+    %ifdef CODE_SIZE
+    %assign CODE_SIZE $ - $$
+    %warning Code size is CODE_SIZE
+    %endif
+
     %ifdef PRINT
 ; Prints a zero-terminated string
 ; (ds:si): char* str
