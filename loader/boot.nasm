@@ -49,11 +49,9 @@ read_loop:
     cmp cl, 19
     jne .no_carry
     mov cl, 1
-    inc dh
-    test dh, 2
-    jz .no_carry
+    xor dh, 1
+    jnz .no_carry
     inc ch
-    xor dh, dh
 .no_carry:
     add bp, 0x40
     mov es, bp

@@ -27,16 +27,13 @@ read_loop:
     jnz .retry
     jmp on_read_error
 .success:
-    jc on_read_error
     add cl, al ; add cl, 2
     cmp cl, 19
     jne .no_carry
     mov cl, 1
-    inc dh
-    test dh, 2
-    jz .no_carry
+    xor dh, 1
+    jnz .no_carry
     inc ch
-    xor dh, dh
 .no_carry:
     mov ah, 2
     add bp, 0x40
