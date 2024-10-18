@@ -4,18 +4,19 @@ pub fn build(b: *std.Build) void {
     var disabled_features = std.Target.Cpu.Feature.Set.empty;
     var enabled_features = std.Target.Cpu.Feature.Set.empty;
 
+    disabled_features.addFeature(@intFromEnum(std.Target.x86.Feature.x87));
     disabled_features.addFeature(@intFromEnum(std.Target.x86.Feature.mmx));
     disabled_features.addFeature(@intFromEnum(std.Target.x86.Feature.sse));
     disabled_features.addFeature(@intFromEnum(std.Target.x86.Feature.sse2));
     disabled_features.addFeature(@intFromEnum(std.Target.x86.Feature.avx));
     disabled_features.addFeature(@intFromEnum(std.Target.x86.Feature.avx2));
-    disabled_features.addFeature(@intFromEnum(std.Target.x86.Feature.avx2));
     enabled_features.addFeature(@intFromEnum(std.Target.x86.Feature.soft_float));
 
-    const x86_64_freestanfing = b.resolveTargetQuery(std.Target.Query{
+    const x86_64_freestanding = b.resolveTargetQuery(std.Target.Query{
         .cpu_arch = std.Target.Cpu.Arch.x86_64,
         .os_tag = std.Target.Os.Tag.freestanding,
         .abi = std.Target.Abi.none,
+        .cpu_model = .{ .explicit = &std.Target.x86.cpu.x86_64 },
         .cpu_features_sub = disabled_features,
         .cpu_features_add = enabled_features,
     });
@@ -24,14 +25,19 @@ pub fn build(b: *std.Build) void {
     const kernel_elf = b.addExecutable(.{
         .name = "kernel.elf",
         .root_source_file = b.path("src/main.zig"),
-        .target = x86_64_freestanfing,
+        .target = x86_64_freestanding,
         .optimize = optimize,
         .code_model = .kernel,
         .single_threaded = true,
+        .link_libc = false,
     });
+    kernel_elf.bundle_compiler_rt = false;
     kernel_elf.setLinkerScript(b.path("src/linker.ld"));
+    b.installArtifact(kernel_elf);
 
     const kernel_bin = b.addObjCopy(kernel_elf.getEmittedBin(), .{ .format = .bin });
+
+    b.getInstallStep().dependOn(&b.addInstallFile(kernel_bin.getOutput(), "kernel.bin").step);
 
     const boot = b.addSystemCommand(&.{ "nasm", "-f", "bin", "-o" });
     const boot_bin = boot.addOutputFileArg("boot.bin");
@@ -48,7 +54,7 @@ pub fn build(b: *std.Build) void {
     const opt_nodisplay = b.option(
         bool,
         "nodisplay",
-        "Do not display video output. The kernel will still VGA graphics",
+        "Do not display video output. The kernel will still see emulated VGA graphics",
     ) orelse false;
     const opt_monitor = b.option(bool, "monitor", "Enable QEMU monitor") orelse false;
 
@@ -57,6 +63,9 @@ pub fn build(b: *std.Build) void {
     run_image.addArgs(&.{ "-display", if (opt_nodisplay) "none" else "gtk,full-screen=on" });
     if (opt_monitor)
         run_image.addArgs(&.{ "-monitor", "stdio" });
+    if (b.args) |args| {
+        run_image.addArgs(args);
+    }
 
     const run_step = b.step("run", "Run the kernel in QEMU");
     run_step.dependOn(&run_image.step);

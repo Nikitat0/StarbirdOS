@@ -91,6 +91,7 @@ read_loop:
 long_mode_bootstrap:
     mov fs, bx
     mov gs, bx
+    mov esp, 0x20000
     jmp 0x20200 - 0x7c00
     bits 16
 

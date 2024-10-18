@@ -1,5 +1,9 @@
 export fn _start() callconv(.Naked) noreturn {
-    @call(.always_inline, kernel_main, .{});
+    asm volatile (
+        \\callq %[main:P]
+        :
+        : [main] "s" (&kernel_main),
+    );
 }
 
 fn kernel_main() noreturn {
