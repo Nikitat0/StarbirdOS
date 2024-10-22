@@ -28,6 +28,7 @@ pub fn build(b: *std.Build) void {
         .target = x86_64_freestanding,
         .optimize = optimize,
         .code_model = .kernel,
+        .pic = false,
         .single_threaded = true,
         .link_libc = false,
     });

@@ -1,6 +1,6 @@
 SECTIONS {
-    . = 0x20200;
-    .text : AT(0x20200) {
+    . = 0xffffffff80020200;
+    .text : {
         *(.text)
         *(.text.*)
     }

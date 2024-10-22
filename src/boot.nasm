@@ -50,12 +50,19 @@ read_loop:
     xor ax, ax
     xor di, di
     rep stosw
-    mov byte ss:[0xf000], 0b10000001
-    mov byte ss:[0xe000], 1
-    mov word ss:[0xe001], 0x1f0
-    mov byte ss:[0xd000], 1
-    mov word ss:[0xd001], 0x1e0
-    mov esp, 0x1d000
+; 2MiB kernel page
+    mov byte ss:[0xf000], 0b10000001 ; Present & Page Size bits
+; kernel PDP
+    mov byte ss:[0xeff0], 1 ; Present bit
+    mov word ss:[0xeff1], 0x1f0 ; Physical address of the kernel page
+; boot PDP
+    mov byte ss:[0xd000], 1 ; Present bit
+    mov word ss:[0xd001], 0x1f0 ; Physical address of the kernel page
+; PML4
+    mov byte ss:[0xcff8], 1 ; Present bit
+    mov word ss:[0xcff9], 0x1e0 ; Physical address of the kernel PDP
+    mov byte ss:[0xc000], 1 ; Present bit
+    mov word ss:[0xc001], 0x1d0 ; Physical address of the boot PDP
 
 ; Enable PAE
     mov edx, cr4
@@ -69,7 +76,7 @@ read_loop:
     wrmsr
 
 ; Setup PML4
-    mov eax, esp
+    mov eax, 0x1c000
     mov cr3, eax
 
 ; Enter long mode by setting PE & PG
@@ -91,8 +98,9 @@ read_loop:
 long_mode_bootstrap:
     mov fs, bx
     mov gs, bx
-    mov esp, 0x20000
-    jmp 0x20200 - 0x7c00
+    mov rsp, 0xffffffff8001c000
+    lea rax, [rsp - 0x1c000 + 0x20200]
+    jmp rax
     bits 16
 
 gdt:
