@@ -22,7 +22,7 @@ pub fn build(b: *std.Build) void {
     });
     const optimize = b.standardOptimizeOption(.{});
 
-    const kernel_elf = b.addExecutable(.{
+    const kernel_o = b.addExecutable(.{
         .name = "kernel.elf",
         .root_source_file = b.path("src/main.zig"),
         .target = x86_64_freestanding,
@@ -31,11 +31,12 @@ pub fn build(b: *std.Build) void {
         .single_threaded = true,
         .link_libc = false,
     });
-    kernel_elf.bundle_compiler_rt = false;
-    kernel_elf.setLinkerScript(b.path("src/linker.ld"));
-    b.installArtifact(kernel_elf);
+    kernel_o.bundle_compiler_rt = false;
+    kernel_o.setLinkerScript(b.path("src/linker.ld"));
 
-    const kernel_bin = b.addObjCopy(kernel_elf.getEmittedBin(), .{ .format = .bin });
+    b.getInstallStep().dependOn(&b.addInstallFile(kernel_o.getEmittedBin(), "kernel.o").step);
+
+    const kernel_bin = b.addObjCopy(kernel_o.getEmittedBin(), .{ .format = .bin });
 
     b.getInstallStep().dependOn(&b.addInstallFile(kernel_bin.getOutput(), "kernel.bin").step);
 
