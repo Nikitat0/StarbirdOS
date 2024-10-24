@@ -1,3 +1,6 @@
+const std = @import("std");
+const builtin = std.builtin;
+
 const vga = @import("./vga.zig");
 const VgaConsole = @import("./VgaConsole.zig");
 
@@ -17,5 +20,12 @@ fn kernel_main() noreturn {
     vga.disableCursor();
     var console = VgaConsole.obtain();
     console.writer().print("{s}", .{LOGO}) catch {};
+    while (true) {}
+}
+
+pub fn panic(msg: []const u8, _: ?*builtin.StackTrace, _: ?usize) noreturn {
+    var console = VgaConsole.obtain();
+    const writer = console.writer();
+    writer.print("kernel panic: {s}\n", .{msg}) catch {};
     while (true) {}
 }
