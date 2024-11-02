@@ -14,17 +14,14 @@ inline fn addressByCoords(x: usize, y: usize) usize {
 }
 
 pub fn clear() void {
-    for (TEXT_BUFFER) |*c|
-        c.* = 0;
+    @memset(TEXT_BUFFER, 0);
 }
 
 pub fn scroll() void {
     for (TEXT_BUFFER[0 .. SIZE - WIDTH], TEXT_BUFFER[0 + WIDTH ..]) |*dst, src| {
         dst.* = src;
     }
-    for (TEXT_BUFFER[SIZE - WIDHT ..]) |*c| {
-        c.* = 0;
-    }
+    @memset(TEXT_BUFFER[SIZE - WIDTH ..], 0);
 }
 
 pub fn printChar(char: u8, x: usize, y: usize) void {

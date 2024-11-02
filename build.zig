@@ -32,7 +32,6 @@ pub fn build(b: *std.Build) void {
         .single_threaded = true,
         .link_libc = false,
     });
-    kernel_o.bundle_compiler_rt = false;
     kernel_o.setLinkerScript(b.path("src/linker.ld"));
 
     b.getInstallStep().dependOn(&b.addInstallFile(kernel_o.getEmittedBin(), "kernel.o").step);
