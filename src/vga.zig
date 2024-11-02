@@ -3,14 +3,14 @@ const Tuple = std.meta.Tuple;
 
 const raw = @import("./raw.zig");
 
-const WIDHT: usize = 80;
+const WIDTH: usize = 80;
 const HEIGHT: usize = 25;
-const SIZE: usize = WIDHT * HEIGHT;
+const SIZE: usize = WIDTH * HEIGHT;
 
 const TEXT_BUFFER: []volatile u16 = @as([*]volatile u16, @ptrFromInt(0xb8000))[0..SIZE];
 
 inline fn addressByCoords(x: usize, y: usize) usize {
-    return x + y * WIDHT;
+    return x + y * WIDTH;
 }
 
 pub fn clear() void {
@@ -19,7 +19,7 @@ pub fn clear() void {
 }
 
 pub fn scroll() void {
-    for (TEXT_BUFFER[0 .. SIZE - WIDHT], TEXT_BUFFER[0 + WIDHT ..]) |*dst, src| {
+    for (TEXT_BUFFER[0 .. SIZE - WIDTH], TEXT_BUFFER[0 + WIDTH ..]) |*dst, src| {
         dst.* = src;
     }
     for (TEXT_BUFFER[SIZE - WIDHT ..]) |*c| {
@@ -46,7 +46,7 @@ pub fn printStr(str: []const u8, start_x: usize, start_y: usize) Tuple(&.{ usize
         }
         printChar(c, x, y);
         x += 1;
-        if (x >= WIDHT) {
+        if (x >= WIDTH) {
             x = 0;
             y += 1;
         }
