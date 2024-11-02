@@ -1,7 +1,7 @@
 const std = @import("std");
 const Tuple = std.meta.Tuple;
 
-const raw = @import("./raw.zig");
+const utils = @import("./utils.zig");
 
 const WIDTH: usize = 80;
 const HEIGHT: usize = 25;
@@ -52,6 +52,6 @@ pub fn printStr(str: []const u8, start_x: usize, start_y: usize) Tuple(&.{ usize
 }
 
 pub fn disableCursor() void {
-    raw.outb(0x3d4, 0x0a);
-    raw.outb(0x3d5, 0x20);
+    utils.outb(0x3d4, 0x0a);
+    utils.outb(0x3d5, 0x20);
 }
