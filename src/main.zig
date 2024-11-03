@@ -15,6 +15,7 @@ export fn _start() callconv(.Naked) noreturn {
 const LOGO: []const u8 = @embedFile("./logo.txt");
 
 fn kernel_main() noreturn {
+    @import("init.zig").init();
     vga.disableCursor();
     var console = VgaConsole.obtain();
     console.writer().print("{s}", .{LOGO}) catch {};
