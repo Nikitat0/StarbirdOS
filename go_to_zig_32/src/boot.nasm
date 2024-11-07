@@ -33,9 +33,8 @@ read_loop:
     cmp cl, 19
     jne .no_carry
     mov cl, 1
+    add ch, dh
     xor dh, 1
-    jnz .no_carry
-    inc ch
 .no_carry:
     mov ah, 2
     add bp, 0x40
