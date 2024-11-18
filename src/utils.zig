@@ -1,3 +1,7 @@
+pub fn delay() void {
+    outb(0x80, undefined);
+}
+
 pub fn switchVirtualSpace(top_level_pmt_phys_addr: anytype) void {
     asm volatile (
         \\ mov %rdi, %cr3
@@ -9,7 +13,7 @@ pub fn switchVirtualSpace(top_level_pmt_phys_addr: anytype) void {
 pub fn inb(port: u16) u8 {
     return asm volatile (
         \\ in %dx, %al
-        : [value] "{al}" (-> u8),
+        : [value] "={rax}" (-> u8),
         : [port] "{dx}" (port),
     );
 }
