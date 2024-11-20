@@ -42,15 +42,15 @@ const Pic = struct {
     };
 
     fn enableIrq(self: Self, irq: u3) void {
-        var mask: u8 = @bitCast(inb(self.dataPort));
+        var mask = inb(self.dataPort);
         mask &= ~(@as(u8, 1) << irq);
-        outb(self.dataPort, @bitCast(mask));
+        outb(self.dataPort, mask);
     }
 
     fn disableIrq(self: Self, irq: u3) void {
-        var mask: u8 = @bitCast(inb(self.dataPort));
+        var mask = inb(self.dataPort);
         mask |= 1 << irq;
-        outb(self.dataPort, @bitCast(mask));
+        outb(self.dataPort, mask);
     }
 };
 
@@ -59,10 +59,9 @@ pub const Chip = enum {
     slave,
 };
 
-pub const Device = enum(u3) {
+pub const Device = enum(u4) {
     timer = 0,
     keyboard = 1,
-    mouse = 12,
 
     const Self = @This();
 
