@@ -17,9 +17,9 @@ const Pic = struct {
     pub fn init(self: Self, options: Options) void {
         const icw1 = packed struct {
             icw4: bool = true,
-            noCascade: bool = true,
+            noCascade: bool = false,
             unused1: u1 = undefined,
-            noEdge: bool = true,
+            noEdge: bool = false,
             initCommand: bool = true,
             padding2: u3 = undefined,
         }{};
@@ -51,6 +51,10 @@ const Pic = struct {
         var mask = inb(self.dataPort);
         mask |= 1 << irq;
         outb(self.dataPort, mask);
+    }
+
+    pub fn sendEoi(self: Self) void {
+        outb(self.commandPort, 0x20);
     }
 };
 

@@ -13,7 +13,7 @@ pub fn switchVirtualSpace(top_level_pmt_phys_addr: anytype) void {
 pub fn inb(port: u16) u8 {
     return asm volatile (
         \\ in %dx, %al
-        : [value] "={rax}" (-> u8),
+        : [value] "={al}" (-> u8),
         : [port] "{dx}" (port),
     );
 }
@@ -21,15 +21,15 @@ pub fn inb(port: u16) u8 {
 pub fn inw(port: u16) u8 {
     return asm volatile (
         \\ in %dx, %al
-        : [value] "{ax}" (-> u16),
+        : [value] "={ax}" (-> u16),
         : [port] "{dx}" (port),
     );
 }
 
-pub fn ind(port: u32) u8 {
+pub fn ind(port: u32) u32 {
     return asm volatile (
         \\ in %dx, %eax
-        : [value] "{eax}" (-> u32),
+        : [value] "={eax}" (-> u32),
         : [port] "{dx}" (port),
     );
 }

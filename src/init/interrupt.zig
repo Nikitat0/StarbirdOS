@@ -4,44 +4,116 @@ const interrupts = @import("../interrupt.zig");
 const allocator = alloc.allocator;
 const GateDescriptor = interrupts.GateDescriptor;
 
-const ISR = fn () callconv(.Interrupt) void;
+const handler = fn (u8, *const Context) callconv(.SysV) void;
 
-const handlers: [256]?*const ISR = init: {
-    const value = .{null} ** 256;
-    break :init value;
-};
+pub var handlers: [256]?*const handler = .{null} ** 256;
 
-pub fn init() void {
-    const idt = allocator.create(interrupts.IDT) catch unreachable;
-    for (0.., idt) |vector, *gate_descriptor| {
-        const handler: *const ISR = if (handlers[vector]) |value| value else init: {
-            const trampoline = allocator.create(Trampoline) catch unreachable;
-            trampoline.* = Trampoline.init(@intCast(vector));
-            break :init @ptrCast(trampoline);
-        };
-        gate_descriptor.* = GateDescriptor.init(handler, .Interrupt);
+var trampolines: [256]ISR align(8 * 256) = undefined;
+var idt: interrupts.IDT = undefined;
+
+pub fn init() callconv(.C) void {
+    for (&trampolines, &idt) |*trampoline, *gate_descriptor| {
+        trampoline.init();
+        gate_descriptor.* = GateDescriptor.init(@ptrCast(trampoline), .Interrupt);
     }
-    interrupts.loadIdt(idt);
+    interrupts.loadIdt(&idt);
 }
 
-const Trampoline = packed struct {
-    @"mov edi, ...": u8 = 0xbf,
-    vector: u32,
-    @"mov rax, ...": u24 = 0xc0c748,
-    handler: u32,
-    @"jmp rax": u16 = 0xe0ff,
+const ISR = packed struct(u56) {
+    @"push imm8": u8 = 0x6a,
+    vector: u8,
+    @"jmp rel32": u8 = 0xe9,
+    offset: u32,
 
     const Self = @This();
 
-    pub fn init(vector: u8) Self {
-        return .{
-            .vector = @intCast(vector),
-            .handler = @truncate(@intFromPtr(&defaultInterruptHandler)),
+    pub fn init(self: *Self) void {
+        const from = @intFromPtr(self) + @divExact(@bitSizeOf(Self), 8);
+        const to = @intFromPtr(&interruptHandler);
+        self.* = .{
+            .vector = @truncate(@intFromPtr(self) / 8),
+            .offset = @truncate(to -% from),
         };
     }
 };
 
-pub fn defaultInterruptHandler(vector: u8) callconv(.SysV) void {
+pub fn defaultHandler(vector: u8, context: *const Context) callconv(.SysV) void {
     @setAlignStack(1);
-    std.debug.panic("unhandled interrupt {}", .{vector});
+    std.debug.panic(
+        \\unhandled interrupt {}
+        \\context: {}
+    , .{ vector, context });
+}
+
+pub const Context = extern struct {
+    rax: u64,
+    rcx: u64,
+    rdx: u64,
+    rbx: u64,
+    rbp: u64,
+    rsi: u64,
+    rdi: u64,
+    r: [8]u64,
+    error_code: u64,
+    rip: u64,
+    cs: u16,
+    rflags: u64,
+    rsp: u64,
+    ss: u16,
+};
+
+pub fn interruptHandler() callconv(.Naked) void {
+    asm volatile (
+        \\testb $0xf, %%spl
+        \\jnz 1f
+        \\push (%%rsp)
+        \\1:
+        \\
+        \\push %%r14
+        \\push %%r13
+        \\push %%r12
+        \\push %%r11
+        \\push %%r10
+        \\push %%r9
+        \\push %%r8
+        \\push %%rdi
+        \\push %%rsi
+        \\push %%rbp
+        \\push %%rbx
+        \\push %%rdx
+        \\push %%rcx
+        \\push %%rax
+        \\movzbl 0x70(%%rsp), %%edi
+        \\mov %%r15, 0x70(%%rsp)
+        \\
+        \\mov %[handlers:P](, %%rdi, 0x8), %%rax
+        \\test %%rax, %%rax
+        \\jnz 1f
+        \\lea %[defaultHandler:P], %%rax
+        \\1:
+        \\mov %%rsp, %%rsi
+        \\call *%%rax
+        \\
+        \\
+        \\pop %%rax
+        \\pop %%rcx
+        \\pop %%rdx
+        \\pop %%rbx
+        \\pop %%rbp
+        \\pop %%rsi
+        \\pop %%rdi
+        \\pop %%r8
+        \\pop %%r9
+        \\pop %%r10
+        \\pop %%r11
+        \\pop %%r12
+        \\pop %%r13
+        \\pop %%r14
+        \\pop %%r15
+        \\add $8, %%rsp
+        \\iretq
+        :
+        : [defaultHandler] "s" (&defaultHandler),
+          [handlers] "s" (&handlers),
+    );
 }

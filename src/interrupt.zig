@@ -42,8 +42,8 @@ pub const GateType = enum(u4) {
 pub fn loadIdt(idt: []GateDescriptor) void {
     const idtr = packed struct {
         size: u16,
-        offset: *GateDescriptor,
-    }{ .size = @intCast(idt.len * @sizeOf(GateDescriptor) - 1), .offset = &idt.ptr[0] };
+        offset: [*]GateDescriptor,
+    }{ .size = @intCast(idt.len * @sizeOf(GateDescriptor) - 1), .offset = idt.ptr };
     comptime std.debug.assert(@bitSizeOf(@TypeOf(idtr)) == 80);
     asm volatile (
         \\ lidt (%rax)
