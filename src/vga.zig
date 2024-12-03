@@ -7,7 +7,7 @@ const WIDTH: usize = 80;
 const HEIGHT: usize = 25;
 const SIZE: usize = WIDTH * HEIGHT;
 
-const TEXT_BUFFER: []volatile u16 = @as([*]volatile u16, @ptrFromInt(0xb8000))[0..SIZE];
+const TEXT_BUFFER: []volatile u16 = utils.linkerSymbol([*]volatile u16, "VGA_BUF")[0..SIZE];
 
 inline fn addressByCoords(x: usize, y: usize) usize {
     return x + y * WIDTH;

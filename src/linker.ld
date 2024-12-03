@@ -1,20 +1,34 @@
 SECTIONS {
-    . = 0xffffffff80020200;
+    . = 0xffffffff80000000; /* higher 2GB */
+    KERNEL_OFFSET = .;
+
+    . += 0x20000; /* boot stack offset */
+    . += 0x200; /* VBR offset */
+
     .text : {
         *(.text)
         *(.text.*)
     }
-    .rodata : {
+    .rodata : ALIGN(4K) {
         *(.rodata)
         *(.rodata.*)
     }
-    .data : {
+    .data : ALIGN(4K) {
         *(.data)
         *(.data.*)
     }
-    .bss : {
+    .bss : ALIGN(4K) {
+        BSS_BEGIN = .;
         *(COMMON)
         *(.bss)
         *(.bss.*)
+        BSS_SIZE = . - BSS_BEGIN;
     }
+    VGA_BUF = ALIGN(4K);
+
+    STACK_PAGES = 0x20000 / 4K;
+    TEXT_PAGES = ALIGN(SIZEOF(.text) + 0x200, 4K) / 4K;
+    RODATA_PAGES = ALIGN(SIZEOF(.rodata), 4K) / 4K;
+    DATA_PAGES = ALIGN(SIZEOF(.data), 4K) / 4K;
+    BSS_PAGES = ALIGN(SIZEOF(.bss), 4K) / 4K;
 }

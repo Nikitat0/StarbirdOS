@@ -51,17 +51,17 @@ read_loop:
     xor di, di
     rep stosw
 ; 2MiB kernel page
-    mov byte ss:[0xf000], 0b10000001 ; Present & Page Size bits
+    mov byte ss:[0xf000], 0b10000011 ; P & R/W & PS
 ; kernel PDP
-    mov byte ss:[0xeff0], 1 ; Present bit
+    mov byte ss:[0xeff0], 3 ; P & R/W
     mov word ss:[0xeff1], 0x1f0 ; Physical address of the kernel page
 ; boot PDP
-    mov byte ss:[0xd000], 1 ; Present bit
+    mov byte ss:[0xd000], 3 ; P & R/W
     mov word ss:[0xd001], 0x1f0 ; Physical address of the kernel page
 ; PML4
-    mov byte ss:[0xcff8], 1 ; Present bit
+    mov byte ss:[0xcff8], 3 ; P & R/W
     mov word ss:[0xcff9], 0x1e0 ; Physical address of the kernel PDP
-    mov byte ss:[0xc000], 1 ; Present bit
+    mov byte ss:[0xc000], 3 ; P & R/W
     mov word ss:[0xc001], 0x1d0 ; Physical address of the boot PDP
 
 ; Enable PAE
