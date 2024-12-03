@@ -44,9 +44,9 @@ read_loop:
     cli
 
 ; Prepare first 2MiB identity paging
-    mov di, 0x1d00
+    mov di, 0x1c00
     mov es, di
-    mov cx, 0x1800
+    mov cx, 0x2000
     xor ax, ax
     xor di, di
     rep stosw
