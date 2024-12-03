@@ -4,7 +4,7 @@ const interrupts = @import("../interrupt.zig");
 const allocator = alloc.allocator;
 const GateDescriptor = interrupts.GateDescriptor;
 
-const handler = fn (u8, *const Context) callconv(.SysV) void;
+const handler = fn (*const Context) callconv(.SysV) void;
 
 pub var handlers: [256]?*const handler = .{null} ** 256;
 
@@ -37,12 +37,11 @@ const ISR = packed struct(u56) {
     }
 };
 
-pub fn defaultHandler(vector: u8, context: *const Context) callconv(.SysV) void {
-    @setAlignStack(1);
+pub fn defaultHandler(ctx: *const Context) callconv(.SysV) void {
     std.debug.panic(
         \\unhandled interrupt {}
         \\context: {}
-    , .{ vector, context });
+    , .{ ctx.vector, ctx });
 }
 
 pub const Context = extern struct {
@@ -54,6 +53,7 @@ pub const Context = extern struct {
     rsi: u64,
     rdi: u64,
     r: [8]u64,
+    vector: u8,
     error_code: u64,
     rip: u64,
     cs: u16,
@@ -69,6 +69,7 @@ pub fn interruptHandler() callconv(.Naked) void {
         \\push (%%rsp)
         \\1:
         \\
+        \\push %%r15
         \\push %%r14
         \\push %%r13
         \\push %%r12
@@ -83,17 +84,15 @@ pub fn interruptHandler() callconv(.Naked) void {
         \\push %%rdx
         \\push %%rcx
         \\push %%rax
-        \\movzbl 0x70(%%rsp), %%edi
-        \\mov %%r15, 0x70(%%rsp)
+        \\mov %%rsp, %%rdi
         \\
-        \\mov %[handlers:P](, %%rdi, 0x8), %%rax
+        \\movzbl 0x78(%%rsp), %%eax
+        \\mov %[handlers:P](, %%rax, 0x8), %%rax
         \\test %%rax, %%rax
         \\jnz 1f
         \\lea %[defaultHandler:P], %%rax
         \\1:
-        \\mov %%rsp, %%rsi
         \\call *%%rax
-        \\
         \\
         \\pop %%rax
         \\pop %%rcx
@@ -110,7 +109,7 @@ pub fn interruptHandler() callconv(.Naked) void {
         \\pop %%r13
         \\pop %%r14
         \\pop %%r15
-        \\add $8, %%rsp
+        \\add $16, %%rsp
         \\iretq
         :
         : [defaultHandler] "s" (&defaultHandler),
