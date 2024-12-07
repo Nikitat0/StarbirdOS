@@ -32,21 +32,15 @@ pub fn build(b: *std.Build) void {
         .single_threaded = true,
         .link_libc = false,
     });
+    kernel_o.addObjectFile(addNasm(b, b.path("src/boot.nasm"), "boot.o"));
     kernel_o.setLinkerScript(b.path("src/linker.ld"));
 
     b.getInstallStep().dependOn(&b.addInstallFile(kernel_o.getEmittedBin(), "kernel.o").step);
 
     const kernel_bin = b.addObjCopy(kernel_o.getEmittedBin(), .{ .format = .bin });
 
-    b.getInstallStep().dependOn(&b.addInstallFile(kernel_bin.getOutput(), "kernel.bin").step);
-
-    const boot = b.addSystemCommand(&.{ "nasm", "-f", "bin", "-o" });
-    const boot_bin = boot.addOutputFileArg("boot.bin");
-    boot.addFileArg(b.path("src/boot.nasm"));
-
     const image = b.addSystemCommand(&.{"sh"});
     image.addFileArg(b.path("src/build_image.sh"));
-    image.addFileArg(boot_bin);
     image.addFileArg(kernel_bin.getOutput());
     const boot_img = image.addOutputFileArg("boot.img");
 
@@ -70,4 +64,11 @@ pub fn build(b: *std.Build) void {
 
     const run_step = b.step("run", "Run the kernel in QEMU");
     run_step.dependOn(&run_image.step);
+}
+
+pub fn addNasm(b: *std.Build, source: std.Build.LazyPath, name: []const u8) std.Build.LazyPath {
+    const boot = b.addSystemCommand(&.{ "nasm", "-f", "elf64", "-o" });
+    const boot_o = boot.addOutputFileArg(name);
+    boot.addFileArg(source);
+    return boot_o;
 }

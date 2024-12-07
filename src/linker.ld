@@ -1,9 +1,15 @@
 SECTIONS {
+    .boot 0x7c00 : AT(KERNEL_BEGIN) {
+        KEEP(*(.boot))
+    }
+
     . = 0xffffffff80000000; /* higher 2GB */
     KERNEL_OFFSET = .;
-
     . += 0x20000; /* boot stack offset */
-    . += 0x200; /* VBR offset */
+    KERNEL_BEGIN = .;
+    .vbr_header (KERNEL_BEGIN + 0x1fe) : AT(.) {
+        SHORT(0xaa55)
+    }
 
     .text : {
         *(.text)

@@ -1,3 +1,5 @@
+    section .boot progbits alloc exec nowrite align=1
+
     RETRY_COUNT equ 5
 
     bits 16
@@ -84,7 +86,7 @@ read_loop:
     or eax, (1 << 31) | 1
     mov cr0, eax
 
-    lgdt [dgdt]
+    lgdt [dgdt - $$]
     mov eax, cr0
     or al, 1
     mov cr0, eax
@@ -92,15 +94,16 @@ read_loop:
     mov ds, bx
     mov ss, bx
     mov es, bx
-    jmp CODE_SEG:(long_mode_bootstrap + 0x7c00)
+    jmp CODE_SEG:(long_mode_bootstrap)
 
     bits 64
 long_mode_bootstrap:
     mov fs, bx
     mov gs, bx
-    mov rsp, 0xffffffff8001c000
-    lea rax, [rsp - 0x1c000 + 0x20200]
-    jmp rax
+    extern KERNEL_OFFSET
+    mov rsp, KERNEL_OFFSET + 0x1c000
+    extern _start
+    jmp _start
     bits 16
 
 gdt:
@@ -116,7 +119,7 @@ gdt_end:
 
 dgdt:
     dw gdt_end - gdt - 1
-    dd gdt + 0x20000
+    dd gdt - $$ + 0x20000
 
 on_read_error:
     mov ax, 0x7c0
@@ -133,6 +136,3 @@ on_read_error:
 
 error_msg:
     db 0xd, 0xa, "An error occurred during reading of the image", 0
-
-    times 510-($-$$) db 0
-    db 0x55, 0xaa

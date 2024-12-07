@@ -1,9 +1,9 @@
 const std = @import("std");
 
-var pml4: TranslationTable = .{TranslationEntry.empty} ** 512;
-var pdp: TranslationTable = .{TranslationEntry.empty} ** 512;
-var pd: TranslationTable = .{TranslationEntry.empty} ** 512;
-var pt: TranslationTable = .{TranslationEntry.empty} ** 512;
+var pml4: TranslationTable align(4096) = .{TranslationEntry.empty} ** 512;
+var pdp: TranslationTable align(4096) = .{TranslationEntry.empty} ** 512;
+var pd: TranslationTable align(4096) = .{TranslationEntry.empty} ** 512;
+var pt: TranslationTable align(4096) = .{TranslationEntry.empty} ** 512;
 
 const linkerSymbol = @import("../utils.zig").linkerSymbol;
 
