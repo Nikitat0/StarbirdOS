@@ -87,9 +87,6 @@ read_loop:
     mov cr0, eax
 
     lgdt [dgdt - $$]
-    mov eax, cr0
-    or al, 1
-    mov cr0, eax
     mov bx, DATA_SEG
     mov ds, bx
     mov ss, bx
@@ -98,6 +95,13 @@ read_loop:
 
     bits 64
 long_mode_bootstrap:
+    mov rax, cr0
+    and ax, ~0x4 ; clear CR0.EM
+    mov cr0, rax
+    mov rax, cr4
+    or ax, 1 << 9 ; CR4.OSFXSR
+    mov cr4, rax
+
     mov fs, bx
     mov gs, bx
     extern KERNEL_OFFSET

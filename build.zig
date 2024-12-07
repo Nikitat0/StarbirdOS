@@ -32,7 +32,9 @@ pub fn build(b: *std.Build) void {
         .single_threaded = true,
         .link_libc = false,
     });
+    kernel_o.bundle_compiler_rt = false;
     kernel_o.addObjectFile(addNasm(b, b.path("src/boot.nasm"), "boot.o"));
+    kernel_o.addObjectFile(addNasm(b, b.path("src/lib.nasm"), "lib.o"));
     kernel_o.setLinkerScript(b.path("src/linker.ld"));
 
     b.getInstallStep().dependOn(&b.addInstallFile(kernel_o.getEmittedBin(), "kernel.o").step);

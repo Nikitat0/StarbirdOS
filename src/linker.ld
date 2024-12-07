@@ -7,6 +7,10 @@ SECTIONS {
     KERNEL_OFFSET = .;
     . += 0x20000; /* boot stack offset */
     KERNEL_BEGIN = .;
+    .rt ALIGN(. + SIZEOF(.boot), 16) : AT(.) {
+        *(.rt)
+        *(.rt.*)
+    }
     .vbr_header (KERNEL_BEGIN + 0x1fe) : AT(.) {
         SHORT(0xaa55)
     }
