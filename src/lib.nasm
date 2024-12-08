@@ -43,33 +43,7 @@
 ; ;
 ; ;
     rt_fn memcpy
+    mov rax, rdi
     mov rcx, rdx
-    push rdi
-
-    cmp ecx, 16
-    jb .unaligned
-    test edi, 0xf
-    jnz .unaligned
-
-    sub rsp, 16
-    movaps [rsp], xmm0
-
-    and rdx, -16
-.loop:
-    sub rdx, 16
-    movaps xmm0, [rsi + rdx]
-    movaps [rdi + rdx], xmm0
-    jnz .loop
-
-    movaps xmm0, [rsp]
-    add rsp, 16
-
-    add rdi, rcx
-    and ecx, 0xf
-    sub rdi, rcx
-
-    .unaligned:
     rep movsb
-
-    pop rax
     ret
