@@ -4,7 +4,7 @@ const interrupts = @import("../interrupt.zig");
 const allocator = alloc.allocator;
 const GateDescriptor = interrupts.GateDescriptor;
 
-const handler = fn (*const Context) callconv(.SysV) void;
+const handler = fn (*Context) callconv(.SysV) void;
 
 pub var handlers: [256]?*const handler = .{null} ** 256;
 
@@ -37,7 +37,7 @@ const ISR = packed struct(u56) {
     }
 };
 
-pub fn defaultHandler(ctx: *const Context) callconv(.SysV) void {
+pub fn defaultHandler(ctx: *Context) callconv(.SysV) void {
     std.debug.panic(
         \\unhandled interrupt {}
         \\context: {}
@@ -52,7 +52,14 @@ pub const Context = extern struct {
     rbp: u64,
     rsi: u64,
     rdi: u64,
-    r: [8]u64,
+    r8: u64,
+    r9: u64,
+    r10: u64,
+    r11: u64,
+    r12: u64,
+    r13: u64,
+    r14: u64,
+    r15: u64,
     vector: u8,
     error_code: u64,
     rip: u64,
