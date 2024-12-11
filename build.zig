@@ -31,6 +31,7 @@ pub fn build(b: *std.Build) void {
         .pic = false,
         .single_threaded = true,
         .link_libc = false,
+        .strip = false,
     });
     kernel_o.bundle_compiler_rt = false;
     kernel_o.addObjectFile(addNasm(b, b.path("src/boot.nasm"), "boot.o"));
