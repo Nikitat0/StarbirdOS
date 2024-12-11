@@ -7,7 +7,12 @@ SECTIONS {
     KERNEL_OFFSET = .;
     . += 0x20000; /* boot stack offset */
     KERNEL_BEGIN = .;
-    .rt ALIGN(. + SIZEOF(.boot), 16) : AT(.) {
+    .gdt ALIGN(. + SIZEOF(.boot), 16) : AT(.) {
+        GDT = .;
+        KEEP(*(.gdt))
+        GDT_SIZE = . - GDT;
+    }
+    .rt : {
         *(.rt)
         *(.rt.*)
     }

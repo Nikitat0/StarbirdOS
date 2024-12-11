@@ -31,25 +31,6 @@ pub fn init() void {
 
     const kernel_offset = linkerSymbol(usize, "KERNEL_OFFSET");
 
-    var gdtr: packed struct {
-        size: u16,
-        offset: u64,
-    } = undefined;
-
-    asm volatile (
-        \\sgdt (%[r])
-        :
-        : [r] "r" (&gdtr),
-    );
-
-    gdtr.offset += kernel_offset;
-
-    asm volatile (
-        \\lgdt (%[r])
-        :
-        : [r] "r" (&gdtr),
-    );
-
     pml4[511] = TranslationEntry.init(@intFromPtr(&pdp) - kernel_offset);
     pml4[511].flags.writable = true;
     pdp[510] = TranslationEntry.init(@intFromPtr(&pd) - kernel_offset);

@@ -1,4 +1,5 @@
     section .boot progbits alloc exec nowrite align=1
+    extern KERNEL_OFFSET
 
     RETRY_COUNT equ 5
 
@@ -102,28 +103,23 @@ long_mode_bootstrap:
     or ax, 1 << 9 ; CR4.OSFXSR
     mov cr4, rax
 
+    lgdt [dgdt]
     mov fs, bx
     mov gs, bx
-    extern KERNEL_OFFSET
     mov rsp, KERNEL_OFFSET + 0x1c000
     extern _start
     jmp _start
     bits 16
 
-gdt:
-    dq 0
-gdt_code:
-    dw 0xffff, 0, 0x9a00, 0xaf
-gdt_data:
-    dw 0xffff, 0, 0x9200, 0xcf
-gdt_end:
-
-    CODE_SEG equ gdt_code - gdt
-    DATA_SEG equ gdt_data - gdt
+    CODE_SEG equ 8
+    DATA_SEG equ 16
 
 dgdt:
-    dw gdt_end - gdt - 1
-    dd gdt - $$ + 0x20000
+    extern GDT
+    extern GDT_SIZE
+
+    dw GDT_SIZE - 1
+    dq GDT
 
 on_read_error:
     mov ax, 0x7c0
