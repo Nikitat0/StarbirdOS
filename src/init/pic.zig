@@ -1,6 +1,7 @@
-const pic = @import("../pic.zig");
+const x86_64 = @import("root").x86_64;
+const pic = x86_64.pic;
 
 pub fn init() void {
-    pic.master_pic.init(.{ .chip = .master, .vectorOffset = 0x20 });
-    pic.slave_pic.init(.{ .chip = .slave, .vectorOffset = 0x28 });
+    pic.master.init(.{ .chip = .master, .vector_offset = 0x20 });
+    pic.slave.init(.{ .chip = .slave, .vector_offset = 0x28 });
 }

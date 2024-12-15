@@ -1,48 +1,14 @@
 const std = @import("std");
-const alloc = @import("../alloc.zig");
-const interrupts = @import("../interrupt.zig");
-const allocator = alloc.allocator;
+
+const x86_64 = @import("root").x86_64;
+const interrupts = x86_64.interrupts;
 const GateDescriptor = interrupts.GateDescriptor;
 
-const handler = fn (*Context) callconv(.SysV) void;
+const gdt = @import("gdt.zig");
 
-pub var handlers: [256]?*const handler = .{null} ** 256;
+pub var handlers: [256]?*const Handler = .{null} ** 256;
 
-var trampolines: [256]ISR align(8 * 256) = undefined;
-var idt: interrupts.IDT = undefined;
-
-pub fn init() callconv(.C) void {
-    for (&trampolines, &idt) |*trampoline, *gate_descriptor| {
-        trampoline.init();
-        gate_descriptor.* = GateDescriptor.init(@ptrCast(trampoline), .Interrupt);
-    }
-    interrupts.loadIdt(&idt);
-}
-
-const ISR = packed struct(u56) {
-    @"push imm8": u8 = 0x6a,
-    vector: u8,
-    @"jmp rel32": u8 = 0xe9,
-    offset: u32,
-
-    const Self = @This();
-
-    pub fn init(self: *Self) void {
-        const from = @intFromPtr(self) + @divExact(@bitSizeOf(Self), 8);
-        const to = @intFromPtr(&interruptHandler);
-        self.* = .{
-            .vector = @truncate(@intFromPtr(self) / 8),
-            .offset = @truncate(to -% from),
-        };
-    }
-};
-
-pub fn defaultHandler(ctx: *Context) callconv(.SysV) void {
-    std.debug.panic(
-        \\unhandled interrupt {}
-        \\context: {}
-    , .{ ctx.vector, ctx });
-}
+pub const Handler = fn (*Context) callconv(.SysV) void;
 
 pub const Context = extern struct {
     rax: u64,
@@ -69,7 +35,50 @@ pub const Context = extern struct {
     ss: u16,
 };
 
-pub fn interruptHandler() callconv(.Naked) void {
+var idt: [256]GateDescriptor = undefined;
+var isrs: [256]Isr align(256 * @sizeOf(Isr)) = undefined;
+
+pub fn init() callconv(.C) void {
+    for (&handlers) |*handler|
+        handler.* = &defaultHandler;
+    for (&isrs, &idt) |*trampoline, *gate_descriptor| {
+        trampoline.init();
+        gate_descriptor.* = GateDescriptor.init(.{
+            .handler = @ptrCast(trampoline),
+            .type = .interrupt,
+            .cs = gdt.kernel_code,
+        });
+    }
+    interrupts.lidt(&idt);
+}
+
+const Isr = packed struct {
+    @"push imm8": u8 = 0x6a,
+    vector: u8,
+    cld: u8 = 0xfc,
+    @"jmp rel32": u8 = 0xe9,
+    offset: u32,
+
+    const Self = @This();
+
+    pub fn init(self: *Self) void {
+        const from = @intFromPtr(self) + @divExact(@bitSizeOf(Self), 8);
+        const to = @intFromPtr(&dispatch);
+        self.* = .{
+            .vector = @truncate(@intFromPtr(self) / @sizeOf(Self)),
+            .offset = @truncate(to -% from),
+        };
+    }
+};
+
+pub fn defaultHandler(ctx: *Context) callconv(.SysV) void {
+    std.debug.panic(
+        \\unhandled interrupt {}
+        \\context: {}
+    , .{ ctx.vector, ctx });
+}
+
+pub fn dispatch() callconv(.Naked) void {
     asm volatile (
         \\testb $0xf, %%spl
         \\jnz 1f
@@ -95,10 +104,6 @@ pub fn interruptHandler() callconv(.Naked) void {
         \\
         \\movzbl 0x78(%%rsp), %%eax
         \\mov %[handlers:P](, %%rax, 0x8), %%rax
-        \\test %%rax, %%rax
-        \\jnz 1f
-        \\lea %[defaultHandler:P], %%rax
-        \\1:
         \\call *%%rax
         \\
         \\pop %%rax
@@ -119,7 +124,6 @@ pub fn interruptHandler() callconv(.Naked) void {
         \\add $16, %%rsp
         \\iretq
         :
-        : [defaultHandler] "s" (&defaultHandler),
-          [handlers] "s" (&handlers),
+        : [handlers] "s" (&handlers),
     );
 }

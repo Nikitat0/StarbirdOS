@@ -8,9 +8,8 @@ SECTIONS {
     . += 0x20000; /* boot stack offset */
     KERNEL_BEGIN = .;
     .gdt ALIGN(. + SIZEOF(.boot), 16) : AT(.) {
-        GDT = .;
         KEEP(*(.gdt))
-        GDT_SIZE = . - GDT;
+        GDT_SIZE = SIZEOF(.gdt);
     }
     .rt : {
         *(.rt)

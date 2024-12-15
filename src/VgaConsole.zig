@@ -1,4 +1,6 @@
 const std = @import("std");
+const io = std.io;
+
 const vga = @import("./vga.zig");
 
 x: usize = 0,
@@ -14,8 +16,7 @@ pub fn obtain() Self {
 
 pub fn clear(self: *Self) void {
     vga.clear();
-    self.x = 0;
-    self.y = 0;
+    self.x, self.y = .{ 0, 0 };
 }
 
 pub fn scroll(self: *Self) void {
@@ -24,13 +25,11 @@ pub fn scroll(self: *Self) void {
 }
 
 pub fn write(self: *Self, bytes: []const u8) error{}!usize {
-    const next_pos = vga.printStr(bytes, self.x, self.y);
-    self.x = next_pos[0];
-    self.y = next_pos[1];
+    self.x, self.y = vga.printStr(bytes, self.x, self.y);
     return bytes.len;
 }
 
-const Writer = std.io.Writer(
+const Writer = io.Writer(
     *Self,
     error{},
     write,

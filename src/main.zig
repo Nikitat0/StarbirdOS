@@ -30,3 +30,6 @@ pub fn panic(msg: []const u8, _: ?*builtin.StackTrace, _: ?usize) noreturn {
     writer.print("kernel panic: {s}\n", .{msg}) catch {};
     while (true) {}
 }
+
+pub const linkage = @import("linkage.zig");
+pub const x86_64 = @import("x86_64.zig");

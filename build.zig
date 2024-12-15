@@ -42,6 +42,8 @@ pub fn build(b: *std.Build) void {
 
     const kernel_bin = b.addObjCopy(kernel_o.getEmittedBin(), .{ .format = .bin });
 
+    b.getInstallStep().dependOn(&b.addInstallFile(kernel_bin.getOutput(), "kernel.bin").step);
+
     const image = b.addSystemCommand(&.{"sh"});
     image.addFileArg(b.path("src/build_image.sh"));
     image.addFileArg(kernel_bin.getOutput());

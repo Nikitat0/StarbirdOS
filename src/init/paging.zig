@@ -1,49 +1,43 @@
 const std = @import("std");
 
-var pml4: TranslationTable align(4096) = .{TranslationEntry.empty} ** 512;
-var pdp: TranslationTable align(4096) = .{TranslationEntry.empty} ** 512;
-var pd: TranslationTable align(4096) = .{TranslationEntry.empty} ** 512;
-var pt: TranslationTable align(4096) = .{TranslationEntry.empty} ** 512;
+const x86_64 = @import("root").x86_64;
+const cr = x86_64.cr;
+const msr = x86_64.msr;
+const paging = x86_64.paging;
 
-const linkerSymbol = @import("../utils.zig").linkerSymbol;
+var pml4: paging.Table align(4096) = paging.empty_table;
+var pdp: paging.Table align(4096) = paging.empty_table;
+var pd: paging.Table align(4096) = paging.empty_table;
+var pt: paging.Table align(4096) = paging.empty_table;
+
+const linkage = @import("root").linkage;
 
 pub fn init() void {
-    @memset(linkerSymbol([*]u8, "BSS_BEGIN")[0..linkerSymbol(usize, "BSS_SIZE")], 0);
+    @memset(linkage.symbol([*]u8, "BSS_BEGIN")[0..linkage.value("BSS_SIZE")], 0);
 
     // Set CR0.WP
-    asm volatile (
-        \\ mov %%cr0, %[r]
-        \\ or $0x10000, %[r]
-        \\ mov %[r], %%cr0
-        :
-        : [r] "r" (@as(usize, undefined)),
-    );
+    cr.write(0, cr.read(0) | 0x10000);
 
     // Set EFER.NXE
-    asm volatile (
-        \\ rdmsr
+    msr.modify(msr.efer,
         \\ or $0x800, %%eax
-        \\ wrmsr
-        :
-        : [efer] "{ecx}" (0xc0000080),
-        : "rax", "rdx"
     );
 
-    const kernel_offset = linkerSymbol(usize, "KERNEL_OFFSET");
+    const kernel_offset = paging.VirtualAddress.examine(linkage.value("KERNEL_OFFSET"));
 
-    pml4[511] = TranslationEntry.init(@intFromPtr(&pdp) - kernel_offset);
-    pml4[511].flags.writable = true;
-    pdp[510] = TranslationEntry.init(@intFromPtr(&pd) - kernel_offset);
-    pdp[510].flags.writable = true;
-    pd[0] = TranslationEntry.init(@intFromPtr(&pt) - kernel_offset);
-    pd[0].flags.writable = true;
+    pml4[kernel_offset.pml4_index] = paging.TableEntry.init(linkage.loadAddr(&pdp));
+    pml4[kernel_offset.pml4_index].flags.writable = true;
+    pdp[kernel_offset.pdp_index] = paging.TableEntry.init(linkage.loadAddr(&pd));
+    pdp[kernel_offset.pdp_index].flags.writable = true;
+    pd[kernel_offset.pd_index] = paging.TableEntry.init(linkage.loadAddr(&pt));
+    pd[kernel_offset.pd_index].flags.writable = true;
 
-    var i: usize = 0;
-    var entry = TranslationEntry.init(0);
+    var i: usize = kernel_offset.pt_index;
+    var entry = paging.TableEntry.init(0);
 
     entry.flags.writable = true;
     entry.flags.nonExecutable = true;
-    for (0..linkerSymbol(usize, "STACK_PAGES")) |_| {
+    for (0..linkage.value("STACK_PAGES")) |_| {
         pt[i] = entry;
         i += 1;
         entry.raw += 0x1000;
@@ -51,71 +45,36 @@ pub fn init() void {
 
     entry.flags.writable = false;
     entry.flags.nonExecutable = false;
-    for (0..linkerSymbol(usize, "TEXT_PAGES")) |_| {
+    for (0..linkage.value("TEXT_PAGES")) |_| {
         pt[i] = entry;
         i += 1;
         entry.raw += 0x1000;
     }
 
     entry.flags.nonExecutable = true;
-    for (0..linkerSymbol(usize, "RODATA_PAGES")) |_| {
+    for (0..linkage.value("RODATA_PAGES")) |_| {
         pt[i] = entry;
         i += 1;
         entry.raw += 0x1000;
     }
 
     entry.flags.writable = true;
-    for (0..linkerSymbol(usize, "DATA_PAGES")) |_| {
+    for (0..linkage.value("DATA_PAGES")) |_| {
         pt[i] = entry;
         i += 1;
         entry.raw += 0x1000;
     }
 
     entry.flags.nonExecutable = false;
-    for (0..linkerSymbol(usize, "BSS_PAGES")) |_| {
+    for (0..linkage.value("BSS_PAGES")) |_| {
         pt[i] = entry;
         i += 1;
         entry.raw += 0x1000;
     }
 
-    pt[i] = TranslationEntry.init(0xb8000);
+    pt[i] = paging.TableEntry.init(0xb8000);
     pt[i].flags.writable = true;
     pt[i].flags.nonExecutable = true;
 
-    setCr3(@intFromPtr(&pml4) - kernel_offset);
-}
-
-pub const TranslationEntry = packed union {
-    raw: u64,
-    flags: packed struct {
-        present: bool,
-        writable: bool,
-        user: bool,
-        padding: u60,
-        nonExecutable: bool,
-    },
-
-    const Self = @This();
-
-    const empty: Self = .{ .raw = 0 };
-
-    pub fn init(addr: u64) Self {
-        var self = TranslationEntry{ .raw = (addr & 0xfffffffffff00) };
-        self.flags.present = true;
-        return self;
-    }
-};
-
-const TranslationTable = [512]TranslationEntry;
-
-comptime {
-    std.debug.assert(@sizeOf(TranslationTable) == 0x1000);
-}
-
-pub fn setCr3(top_level_translation_table: anytype) void {
-    asm volatile (
-        \\mov %[cr3], %%cr3
-        :
-        : [cr3] "r" (top_level_translation_table),
-    );
+    paging.setTopLevelTable(linkage.loadAddr(&pml4));
 }

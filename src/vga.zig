@@ -1,38 +1,36 @@
 const std = @import("std");
 const Tuple = std.meta.Tuple;
 
-const utils = @import("./utils.zig");
+const linkage = @import("root").linkage;
+const x86_64 = @import("root").x86_64;
+const io_ports = x86_64.io_ports;
 
-const WIDTH: usize = 80;
-const HEIGHT: usize = 25;
-const SIZE: usize = WIDTH * HEIGHT;
+const width: usize = 80;
+const height: usize = 25;
+const size: usize = width * height;
 
-const TEXT_BUFFER: []volatile u16 = utils.linkerSymbol([*]volatile u16, "VGA_BUF")[0..SIZE];
-
-inline fn addressByCoords(x: usize, y: usize) usize {
-    return x + y * WIDTH;
-}
+const text_buffer: []volatile u16 = linkage.symbol([*]volatile u16, "VGA_BUF")[0..size];
 
 pub fn clear() void {
-    @memset(TEXT_BUFFER, 0);
+    @memset(text_buffer, 0);
 }
 
 pub fn scroll() void {
-    for (TEXT_BUFFER[0 .. SIZE - WIDTH], TEXT_BUFFER[0 + WIDTH ..]) |*dst, src| {
+    for (text_buffer[0 .. size - width], text_buffer[0 + width ..]) |*dst, src| {
         dst.* = src;
     }
-    @memset(TEXT_BUFFER[SIZE - WIDTH ..], 0);
+    @memset(text_buffer[size - width ..], 0);
 }
 
 pub fn printChar(char: u8, x: usize, y: usize) void {
-    TEXT_BUFFER[addressByCoords(x, y)] = @as(u16, 0xf00) + char;
+    text_buffer[x + y * width] = @as(u16, 0xf00) + char;
 }
 
 pub fn printStr(str: []const u8, start_x: usize, start_y: usize) Tuple(&.{ usize, usize }) {
     var x = start_x;
     var y = start_y;
     for (str) |c| {
-        if (y == HEIGHT) {
+        if (y == height) {
             scroll();
             y -= 1;
         }
@@ -43,7 +41,7 @@ pub fn printStr(str: []const u8, start_x: usize, start_y: usize) Tuple(&.{ usize
         }
         printChar(c, x, y);
         x += 1;
-        if (x >= WIDTH) {
+        if (x >= width) {
             x = 0;
             y += 1;
         }
@@ -52,6 +50,7 @@ pub fn printStr(str: []const u8, start_x: usize, start_y: usize) Tuple(&.{ usize
 }
 
 pub fn disableCursor() void {
-    utils.outb(0x3d4, 0x0a);
-    utils.outb(0x3d5, 0x20);
+    io_ports.outb(0x3d4, 0x0a);
+    io_ports.delay();
+    io_ports.outb(0x3d5, 0x20);
 }
