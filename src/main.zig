@@ -4,22 +4,14 @@ const builtin = std.builtin;
 const vga = @import("./vga.zig");
 const VgaConsole = @import("./VgaConsole.zig");
 
-export fn _start() callconv(.Naked) noreturn {
-    asm volatile (
-        \\callq %[main:P]
-        :
-        : [main] "s" (&kernel_main),
-    );
-}
+const logo: []const u8 = @embedFile("logo");
 
-const LOGO: []const u8 = @embedFile("./logo.txt");
-
-fn kernel_main() noreturn {
+export fn kernel_main() noreturn {
     @import("init.zig").init();
 
     vga.disableCursor();
     var console = VgaConsole.obtain();
-    console.writer().print("{s}", .{LOGO}) catch {};
+    console.writer().print("{s}", .{logo}) catch {};
 
     while (true) {}
 }

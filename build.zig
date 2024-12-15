@@ -1,22 +1,24 @@
 const std = @import("std");
+const Build = std.Build;
+const Target = std.Target;
 
-pub fn build(b: *std.Build) void {
-    var disabled_features = std.Target.Cpu.Feature.Set.empty;
-    var enabled_features = std.Target.Cpu.Feature.Set.empty;
+pub fn build(b: *Build) void {
+    var disabled_features = Target.Cpu.Feature.Set.empty;
+    var enabled_features = Target.Cpu.Feature.Set.empty;
 
-    disabled_features.addFeature(@intFromEnum(std.Target.x86.Feature.x87));
-    disabled_features.addFeature(@intFromEnum(std.Target.x86.Feature.mmx));
-    disabled_features.addFeature(@intFromEnum(std.Target.x86.Feature.sse));
-    disabled_features.addFeature(@intFromEnum(std.Target.x86.Feature.sse2));
-    disabled_features.addFeature(@intFromEnum(std.Target.x86.Feature.avx));
-    disabled_features.addFeature(@intFromEnum(std.Target.x86.Feature.avx2));
-    enabled_features.addFeature(@intFromEnum(std.Target.x86.Feature.soft_float));
+    disabled_features.addFeature(@intFromEnum(Target.x86.Feature.x87));
+    disabled_features.addFeature(@intFromEnum(Target.x86.Feature.mmx));
+    disabled_features.addFeature(@intFromEnum(Target.x86.Feature.sse));
+    disabled_features.addFeature(@intFromEnum(Target.x86.Feature.sse2));
+    disabled_features.addFeature(@intFromEnum(Target.x86.Feature.avx));
+    disabled_features.addFeature(@intFromEnum(Target.x86.Feature.avx2));
+    enabled_features.addFeature(@intFromEnum(Target.x86.Feature.soft_float));
 
-    const x86_64_freestanding = b.resolveTargetQuery(std.Target.Query{
-        .cpu_arch = std.Target.Cpu.Arch.x86_64,
-        .os_tag = std.Target.Os.Tag.freestanding,
-        .abi = std.Target.Abi.none,
-        .cpu_model = .{ .explicit = &std.Target.x86.cpu.x86_64 },
+    const x86_64_freestanding = b.resolveTargetQuery(Target.Query{
+        .cpu_arch = Target.Cpu.Arch.x86_64,
+        .os_tag = Target.Os.Tag.freestanding,
+        .abi = Target.Abi.none,
+        .cpu_model = .{ .explicit = &Target.x86.cpu.x86_64 },
         .cpu_features_sub = disabled_features,
         .cpu_features_add = enabled_features,
     });
@@ -33,6 +35,11 @@ pub fn build(b: *std.Build) void {
         .link_libc = false,
         .strip = false,
     });
+    kernel_o.entry = .{ .symbol_name = "kernel_main" };
+    kernel_o.root_module.addAnonymousImport(
+        "logo",
+        .{ .root_source_file = b.path("assets/logo.txt") },
+    );
     kernel_o.bundle_compiler_rt = false;
     kernel_o.addObjectFile(addNasm(b, b.path("src/boot.nasm"), "boot.o"));
     kernel_o.addObjectFile(addNasm(b, b.path("src/lib.nasm"), "lib.o"));
@@ -71,7 +78,7 @@ pub fn build(b: *std.Build) void {
     run_step.dependOn(&run_image.step);
 }
 
-pub fn addNasm(b: *std.Build, source: std.Build.LazyPath, name: []const u8) std.Build.LazyPath {
+pub fn addNasm(b: *Build, source: Build.LazyPath, name: []const u8) Build.LazyPath {
     const boot = b.addSystemCommand(&.{ "nasm", "-f", "elf64", "-o" });
     const boot_o = boot.addOutputFileArg(name);
     boot.addFileArg(source);

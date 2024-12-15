@@ -1,5 +1,7 @@
 const std = @import("std");
 
+const linkage = @import("root").linkage;
+
 const x86_64 = @import("root").x86_64;
 const cr = x86_64.cr;
 const msr = x86_64.msr;
@@ -9,8 +11,6 @@ var pml4: paging.Table align(4096) = paging.empty_table;
 var pdp: paging.Table align(4096) = paging.empty_table;
 var pd: paging.Table align(4096) = paging.empty_table;
 var pt: paging.Table align(4096) = paging.empty_table;
-
-const linkage = @import("root").linkage;
 
 pub fn init() void {
     @memset(linkage.symbol([*]u8, "BSS_BEGIN")[0..linkage.value("BSS_SIZE")], 0);
