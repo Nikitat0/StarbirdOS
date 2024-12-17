@@ -15,13 +15,13 @@ var pt: paging.Table align(4096) = paging.empty_table;
 pub fn init() void {
     @memset(linkage.symbol([*]u8, "BSS_BEGIN")[0..linkage.value("BSS_SIZE")], 0);
 
-    // Set CR0.WP
-    cr.write(0, cr.read(0) | 0x10000);
+    var cr0 = cr.read(cr.@"0");
+    cr0.wp = true;
+    cr.write(cr0);
 
-    // Set EFER.NXE
-    msr.modify(msr.efer,
-        \\ or $0x800, %%eax
-    );
+    var efer = msr.read(msr.Efer);
+    efer.nxe = true;
+    msr.write(efer);
 
     const kernel_offset = paging.VirtualAddress.examine(linkage.value("KERNEL_OFFSET"));
 
