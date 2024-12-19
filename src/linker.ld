@@ -9,6 +9,7 @@ SECTIONS {
     KERNEL_BEGIN = .;
     .gdt ALIGN(. + SIZEOF(.boot), 16) : AT(.) {
         KEEP(*(.gdt))
+        KEEP(*(.gdt.tss))
         GDT_SIZE = SIZEOF(.gdt);
     }
     .rt : {

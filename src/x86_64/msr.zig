@@ -32,3 +32,24 @@ pub const Efer = packed struct(u64) {
 
     const address = 0xc0000080;
 };
+
+pub const Star = packed struct(u64) {
+    padding: u32 = 0,
+    syscall_cs: u16,
+    sysret_cs: u16,
+
+    const address = 0xc0000081;
+};
+
+pub const Lstar = packed struct(u64) {
+    syscall_target: usize,
+
+    const address = 0xc0000082;
+};
+
+pub const Sfmask = packed struct(u64) {
+    flag_mask: u32,
+    _raz: u32 = undefined,
+
+    const address = 0xc0000084;
+};

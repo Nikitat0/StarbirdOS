@@ -25,3 +25,5 @@ pub fn panic(msg: []const u8, _: ?*builtin.StackTrace, _: ?usize) noreturn {
 
 pub const linkage = @import("linkage.zig");
 pub const x86_64 = @import("x86_64.zig");
+
+pub const process = @import("process.zig");
