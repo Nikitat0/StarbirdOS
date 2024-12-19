@@ -104,6 +104,7 @@ long_mode_bootstrap:
     mov cr4, rax
 
     lgdt [dgdt]
+    xor ebx, ebx
     mov fs, bx
     mov gs, bx
     mov rsp, KERNEL_OFFSET + 0x1c000
