@@ -25,7 +25,7 @@ pub fn build(b: *Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     const kernel_o = b.addExecutable(.{
-        .name = "kernel.elf",
+        .name = "kernel.o",
         .root_source_file = b.path("src/main.zig"),
         .target = x86_64_freestanding,
         .optimize = optimize,
@@ -51,9 +51,31 @@ pub fn build(b: *Build) void {
 
     b.getInstallStep().dependOn(&b.addInstallFile(kernel_bin.getOutput(), "kernel.bin").step);
 
+    const init_o = b.addExecutable(.{
+        .name = "init.o",
+        .root_source_file = b.path("init/src/main.zig"),
+        .target = x86_64_freestanding,
+        .optimize = optimize,
+        .code_model = .small,
+        .pic = false,
+        .single_threaded = true,
+        .link_libc = false,
+        .strip = false,
+    });
+    init_o.bundle_compiler_rt = false;
+    init_o.entry = .{ .symbol_name = "main" };
+    init_o.setLinkerScript(b.path("init/src/linker.ld"));
+
+    b.getInstallStep().dependOn(&b.addInstallFile(init_o.getEmittedBin(), "init.o").step);
+
+    const init_jedi = b.addObjCopy(init_o.getEmittedBin(), .{ .format = .bin });
+
+    b.getInstallStep().dependOn(&b.addInstallFile(init_jedi.getOutput(), "init.jedi").step);
+
     const image = b.addSystemCommand(&.{"sh"});
-    image.addFileArg(b.path("src/build_image.sh"));
+    image.addFileArg(b.path("build_image.sh"));
     image.addFileArg(kernel_bin.getOutput());
+    image.addFileArg(init_jedi.getOutput());
     const boot_img = image.addOutputFileArg("boot.img");
 
     b.getInstallStep().dependOn(&b.addInstallFile(boot_img, "boot.img").step);

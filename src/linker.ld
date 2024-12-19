@@ -39,7 +39,10 @@ SECTIONS {
         *(.bss.*)
         BSS_SIZE = . - BSS_BEGIN;
     }
-    VGA_BUF = ALIGN(4K);
+    . = ALIGN(4K);
+    VGA_BUF = .;
+    . += 4K;
+    ASSERT((. - KERNEL_BEGIN) <= 128K, "Error: size of kernel exceeded 128KiB limit")
 
     STACK_PAGES = 0x20000 / 4K;
     TEXT_PAGES = ALIGN(SIZEOF(.text) + 0x200, 4K) / 4K;
