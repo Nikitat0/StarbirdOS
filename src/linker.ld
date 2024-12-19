@@ -42,6 +42,7 @@ SECTIONS {
     . = ALIGN(4K);
     VGA_BUF = .;
     . += 4K;
+    KERNEL_END = .;
     ASSERT((. - KERNEL_BEGIN) <= 128K, "Error: size of kernel exceeded 128KiB limit")
 
     STACK_PAGES = 0x20000 / 4K;

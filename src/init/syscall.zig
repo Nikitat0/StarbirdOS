@@ -11,16 +11,7 @@ pub fn init() void {
         .syscall_cs = gdt.kernel_code,
         .sysret_cs = (gdt.user_code -% 16) | 3,
     });
-    msr.write(msr.Lstar{
-        .syscall_target = @intFromPtr(&syscallEntry),
-    });
     msr.write(msr.Sfmask{
-        .flag_mask = 0,
+        .flag_mask = 0x600,
     });
-}
-
-pub fn syscallEntry() void {
-    asm volatile (
-        \\sysretq
-    );
 }

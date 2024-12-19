@@ -1,7 +1,7 @@
 const std = @import("std");
 const io = std.io;
 
-const vga = @import("./vga.zig");
+const vga = @import("../vga.zig");
 
 x: usize = 0,
 y: usize = 0,

@@ -5,11 +5,13 @@ const linkage = @import("root").linkage;
 const x86_64 = @import("root").x86_64;
 const io_ports = x86_64.io_ports;
 
+pub const Console = @import("vga/Console.zig");
+
 const width: usize = 80;
 const height: usize = 25;
 const size: usize = width * height;
 
-const text_buffer: []volatile u16 = linkage.symbol([*]volatile u16, "VGA_BUF")[0..size];
+pub const text_buffer: []volatile u16 = linkage.symbol([*]volatile u16, "VGA_BUF")[0..size];
 
 pub fn clear() void {
     @memset(text_buffer, 0);

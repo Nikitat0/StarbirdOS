@@ -4,8 +4,6 @@ const x86_64 = @import("root").x86_64;
 const SegmentDescriptor = x86_64.SegmentDescriptor;
 const task = x86_64.task;
 
-const process = @import("root").process;
-
 export const GDT linksection(".gdt") = [_]SegmentDescriptor{
     SegmentDescriptor.null,
     .{
@@ -37,7 +35,10 @@ const tss_descriptor: *align(@alignOf(SegmentDescriptor)) volatile SegmentDescri
 };
 
 pub fn init() void {
-    tss_descriptor.* = SegmentDescriptor.System.init(@intFromPtr(&process.tss), @sizeOf(task.StateSegment));
+    tss_descriptor.* = SegmentDescriptor.System.init(
+        @intFromPtr(&@import("../main.zig").tss),
+        @sizeOf(task.StateSegment),
+    );
     task.load((GDT.len - 2) * 8);
 }
 

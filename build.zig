@@ -26,7 +26,7 @@ pub fn build(b: *Build) void {
 
     const kernel_o = b.addExecutable(.{
         .name = "kernel.o",
-        .root_source_file = b.path("src/main.zig"),
+        .root_source_file = b.path("src/root.zig"),
         .target = x86_64_freestanding,
         .optimize = optimize,
         .code_model = .kernel,
@@ -35,7 +35,7 @@ pub fn build(b: *Build) void {
         .link_libc = false,
         .strip = false,
     });
-    kernel_o.entry = .{ .symbol_name = "kernel_main" };
+    kernel_o.entry = .{ .symbol_name = "startup" };
     kernel_o.root_module.addAnonymousImport(
         "logo",
         .{ .root_source_file = b.path("assets/logo.txt") },

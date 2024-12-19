@@ -4,11 +4,15 @@ const x86_64 = @import("root").x86_64;
 const interrupts = x86_64.interrupts;
 const GateDescriptor = interrupts.GateDescriptor;
 
-const gdt = @import("gdt.zig");
+const gdt = @import("init/gdt.zig");
 
-pub var handlers: [256]?*const Handler = .{null} ** 256;
+var handlers: [256]*const Handler = undefined;
 
 pub const Handler = fn (*Context) callconv(.SysV) void;
+
+pub fn setHandler(vector: u8, handler: *const Handler) void {
+    handlers[vector] = handler;
+}
 
 pub const Context = extern struct {
     rax: u64,
@@ -74,8 +78,9 @@ const Isr = packed struct {
 pub fn defaultHandler(ctx: *Context) callconv(.SysV) void {
     std.debug.panic(
         \\unhandled interrupt {}
-        \\context: {}
-    , .{ ctx.vector, ctx });
+        \\error_code: {}
+        \\rip: {x}
+    , .{ ctx.vector, ctx.error_code, ctx.rip });
 }
 
 pub fn dispatch() callconv(.Naked) void {

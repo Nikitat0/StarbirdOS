@@ -108,8 +108,8 @@ long_mode_bootstrap:
     mov fs, bx
     mov gs, bx
     mov rsp, KERNEL_OFFSET + 0x1c000
-    extern kernel_main
-    call kernel_main
+    extern startup
+    call startup
     bits 16
 
     CODE_SEG equ 8
